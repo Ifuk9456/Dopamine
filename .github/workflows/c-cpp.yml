@@ -1,4 +1,4 @@
-name: Build Dopamine (Auto Detect Toolchain)
+name: Build Dopamine (MSVC & MinGW with Header Check)
 
 on:
   push:
@@ -7,49 +7,52 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-    name: Build Dopamine (Auto Toolchain)
+  build-msvc:
+    name: Build with MSVC
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install MSYS2 and CMake
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config
-        update: true
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
 
-    - name: Install CMake via Chocolatey (for MSVC)
-      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+      - name: Configure with CMake (MSVC)
+        run: cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
 
-    - name: Detect and Build (MSVC preferred, fallback to MinGW)
-      shell: pwsh
-      run: |
-        Write-Host "### Detecting CMake default generator..."
-        $generator = & cmake -G 2>&1
-        Write-Host "### Default Generator Output:"
-        Write-Host $generator
+      - name: Build with MSVC
+        run: cmake --build build-msvc --config Release
 
-        Write-Host "### Trying MSVC build..."
-        try {
-          cmake -S . -B build-msvc
-          cmake --build build-msvc --config Release
-          Write-Host "MSVC Build Succeeded."
-          $global:DopaminePath = "build-msvc\Release\Dopamine.exe"
-        }
-        catch {
-          Write-Host "MSVC Build Failed. Fallback to MinGW."
-          # Retry with MSYS2 CMake + MinGW
-          bash -c "cmake -S . -B build-mingw"
-          bash -c "cmake --build build-mingw --config Release"
-          $global:DopaminePath = "build-mingw/Dopamine.exe"
-        }
+      - name: Upload MSVC build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dopamine-msvc
+          path: build-msvc/Release/*.exe
 
-    - name: Upload artifact (Auto)
-      uses: actions/upload-artifact@v4
-      with:
-        name: Dopamine-Auto
-        path: ${{ env.DopaminePath }}
+  build-mingw:
+    name: Build with MinGW
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 (MinGW)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake
+          update: true
+
+      - name: Configure and build with MinGW + Header Check
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build-mingw -G "MinGW Makefiles"
+          cmake --build build-mingw --config Release
+
+      - name: Upload MinGW build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dopamine-mingw
+          path: build-mingw/Dopamine.exe
