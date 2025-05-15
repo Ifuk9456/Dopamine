@@ -21,10 +21,22 @@ jobs:
         install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
         update: true
 
-    - name: Compile
-      run: |
-        gcc -o Dopamine.exe *.c -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
+    - name: Compile Dopamine
       shell: msys2 {0}
+      run: |
+        echo "查找所有 C 文件..."
+        FILES=$(find . -maxdepth 1 -name "*.c")
+        echo "编译文件: $FILES"
+        gcc -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
+
+        echo "检查是否生成 Dopamine.exe..."
+        if [ -f Dopamine.exe ]; then
+          echo "编译成功: Dopamine.exe"
+          ls -lh Dopamine.exe
+        else
+          echo "编译失败，未找到 Dopamine.exe"
+          exit 1
+        fi
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
