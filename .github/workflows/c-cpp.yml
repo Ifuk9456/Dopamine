@@ -21,22 +21,22 @@ jobs:
         install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
         update: true
 
-    - name: Compile Dopamine (safe mode)
+    - name: Compile Dopamine (recursive safe mode)
       shell: msys2 {0}
       run: |
         echo "当前目录:"
         pwd
-        echo "列出当前目录文件:"
-        ls -al
+        echo "列出所有文件:"
+        ls -alR
 
-        echo "查找所有 C 文件..."
-        FILES=$(ls *.c 2>/dev/null || true)
+        echo "递归查找所有 C 文件..."
+        FILES=$(find . -type f -name "*.c")
         if [ -z "$FILES" ]; then
           echo "错误: 未找到任何 C 文件"
           exit 1
         fi
 
-        echo "即将编译文件: $FILES"
+        echo "编译文件: $FILES"
         gcc -mconsole -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
 
         echo "检查 Dopamine.exe 是否存在..."
