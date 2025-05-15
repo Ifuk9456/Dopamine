@@ -11,6 +11,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/NorAdrenaline/ValveSDK/common
     ${PROJECT_SOURCE_DIR}/NorAdrenaline/ValveSDK/pm_shared
     ${CMAKE_SOURCE_DIR}/NorAdrenaline/Reflective
+    ${CMAKE_SOURCE_DIR}/NorAdrenaline/Hack
 )
 
 # 自动检测 C 文件中的 #include
