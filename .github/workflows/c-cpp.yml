@@ -1,4 +1,4 @@
-name: Build Dopamine
+name: Build Dopamine with CMake
 
 on:
   push:
@@ -14,42 +14,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up MSYS2
+    - name: Install MSYS2 and dependencies
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
         update: true
 
-    - name: Compile Dopamine (recursive safe mode)
+    - name: Install CMake via Chocolatey
+      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+    - name: Configure project with CMake
       shell: msys2 {0}
-      run: |
-        echo "当前目录:"
-        pwd
-        echo "列出所有文件:"
-        ls -alR
+      run: cmake -S . -B build
 
-        echo "递归查找所有 C 文件..."
-        FILES=$(find . -type f -name "*.c")
-        if [ -z "$FILES" ]; then
-          echo "错误: 未找到任何 C 文件"
-          exit 1
-        fi
+    - name: Build project with CMake
+      shell: msys2 {0}
+      run: cmake --build build --config Release
 
-        echo "编译文件: $FILES"
-        gcc -mconsole -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
-
-        echo "检查 Dopamine.exe 是否存在..."
-        if [ -f Dopamine.exe ]; then
-          echo "编译成功: Dopamine.exe"
-          ls -lh Dopamine.exe
-        else
-          echo "编译失败，未找到 Dopamine.exe"
-          exit 1
-        fi
+    - name: Check built executable
+      run: dir build\Dopamine.exe
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Dopamine
-        path: Dopamine.exe
+        path: build/Dopamine.exe
