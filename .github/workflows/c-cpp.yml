@@ -27,7 +27,7 @@ jobs:
         echo "查找所有 C 文件..."
         FILES=$(find . -maxdepth 1 -name "*.c")
         echo "编译文件: $FILES"
-        gcc -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
+        gcc -mconsole -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
 
         echo "检查是否生成 Dopamine.exe..."
         if [ -f Dopamine.exe ]; then
