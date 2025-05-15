@@ -1,31 +1,18 @@
-name: Build Dopamine
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
-jobs:
-  build:
-    runs-on: windows-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
-        update: true
-
-    - name: Compile Dopamine
+- name: Compile Dopamine
       shell: msys2 {0}
       run: |
+        echo "当前目录:"
+        pwd
+        echo "列出文件:"
+        ls -al
+
         echo "查找所有 C 文件..."
-        FILES=$(find . -maxdepth 1 -name "*.c")
+        FILES=$(echo *.c)
+        if [ "$FILES" = "*.c" ]; then
+          echo "错误: 未找到任何 C 文件"
+          exit 1
+        fi
+
         echo "编译文件: $FILES"
         gcc -mconsole -o Dopamine.exe $FILES -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
 
@@ -37,9 +24,3 @@ jobs:
           echo "编译失败，未找到 Dopamine.exe"
           exit 1
         fi
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Dopamine
-        path: Dopamine.exe
