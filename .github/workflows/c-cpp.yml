@@ -1,4 +1,4 @@
-name: Build Dopamine with CMake
+name: Build Dopamine (Auto Detect Toolchain)
 
 on:
   push:
@@ -8,35 +8,48 @@ on:
 
 jobs:
   build:
+    name: Build Dopamine (Auto Toolchain)
     runs-on: windows-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install MSYS2 and dependencies
+    - name: Install MSYS2 and CMake
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
+        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config
         update: true
 
-    - name: Install CMake via Chocolatey
+    - name: Install CMake via Chocolatey (for MSVC)
       run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-    - name: Configure project with CMake
-      shell: msys2 {0}
-      run: cmake -S . -B build
+    - name: Detect and Build (MSVC preferred, fallback to MinGW)
+      shell: pwsh
+      run: |
+        Write-Host "### Detecting CMake default generator..."
+        $generator = & cmake -G 2>&1
+        Write-Host "### Default Generator Output:"
+        Write-Host $generator
 
-    - name: Build project with CMake
-      shell: msys2 {0}
-      run: cmake --build build --config Release
+        Write-Host "### Trying MSVC build..."
+        try {
+          cmake -S . -B build-msvc
+          cmake --build build-msvc --config Release
+          Write-Host "MSVC Build Succeeded."
+          $global:DopaminePath = "build-msvc\Release\Dopamine.exe"
+        }
+        catch {
+          Write-Host "MSVC Build Failed. Fallback to MinGW."
+          # Retry with MSYS2 CMake + MinGW
+          bash -c "cmake -S . -B build-mingw"
+          bash -c "cmake --build build-mingw --config Release"
+          $global:DopaminePath = "build-mingw/Dopamine.exe"
+        }
 
-    - name: Check built executable
-      run: dir build\Dopamine.exe
-
-    - name: Upload artifact
+    - name: Upload artifact (Auto)
       uses: actions/upload-artifact@v4
       with:
-        name: Dopamine
-        path: build/Dopamine.exe
+        name: Dopamine-Auto
+        path: ${{ env.DopaminePath }}
