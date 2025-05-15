@@ -1,0 +1,31 @@
+name: Build Dopamine
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+
+    - name: Compile
+      run: |
+        gcc -o Dopamine.exe *.c -luser32 -lgdi32 -lkernel32 -lwinmm -Wall
+      shell: msys2 {0}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Dopamine
+        path: Dopamine.exe
